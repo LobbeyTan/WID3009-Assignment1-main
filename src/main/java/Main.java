@@ -7,12 +7,15 @@ import examples.StarterPacMan.*;
 import pacman.Executor;
 import pacman.controllers.IndividualGhostController;
 import pacman.controllers.MASController;
+import pacman.controllers.PacmanController;
 import pacman.controllers.examples.po.POCommGhosts;
+import pacman.game.Game;
 import pacman.game.Constants.*;
 import pacman.game.internal.POType;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
-
+import java.util.Random;
 
 /**
  * Created by pwillic on 06/05/2016.
@@ -21,13 +24,14 @@ public class Main {
 
     public static void main(String[] args) {
 
-        Executor executor = new Executor.Builder()
+        MyExecutor executor = new MyExecutor.Builder()
                 .setVisual(true)
                 .setPacmanPO(false)
                 .setTickLimit(10000)
+                .setTimeLimit(1)
                 .setScaleFactor(2) // Increase game visual size
-                .setPOType(POType.RADIUS) // pacman sense objects around it in a radius wide fashion instead of straight line sights
-                .setSightLimit(5000) // The sight radius limit, set to maximum 
+                .setPOType(POType.RADIUS) // pacman sense objects around it in a radius wide fashion
+                .setSightLimit(5000) // The sight radius limit, set to maximum
                 .build();
 
         EnumMap<GHOST, IndividualGhostController> controllers = new EnumMap<>(GHOST.class);
@@ -38,7 +42,12 @@ public class Main {
         controllers.put(GHOST.SUE, new Sue());
 
         MASController ghosts = new POCommGhosts(50);
-        executor.runGame(new TreeSearchPacMan(), ghosts, 10); // delay=10; smaller delay for faster gameplay
+        QLearningPacMan player = new QLearningPacMan();
+
+        executor.runQLearningTraining(player, ghosts, 1000);
+
+        executor.runGame(player, ghosts, 10); // delay=10; smaller
+        // delay for faster gameplay
         // executor.runGame(new CustomTreeSearchPacMan(), ghosts, 10);
     }
 }

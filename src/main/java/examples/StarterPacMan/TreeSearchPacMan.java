@@ -42,6 +42,7 @@ public class TreeSearchPacMan extends PacmanController {
 	}
 	 
     @Override
+	// Using DFS algorithms
     public MOVE getMove(Game game, long timeDue) {
 		this.game = game;
     	pacmanCurrentNodeIndex = game.getPacmanCurrentNodeIndex();
