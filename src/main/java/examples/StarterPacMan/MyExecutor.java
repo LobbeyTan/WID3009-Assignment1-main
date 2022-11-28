@@ -254,7 +254,7 @@ public class MyExecutor {
     }
 
     private Game setupGame() {
-        return (this.ghostsMessage) ? new Game(rnd.nextLong(), 0, messenger.copy(), poType, sightLimit) : new Game(0, 0, null, poType, sightLimit);
+        return (this.ghostsMessage) ? new Game(rnd.nextLong(), 0, messenger.copy(), poType, sightLimit) : new Game(rnd.nextLong(), 0, null, poType, sightLimit);
     }
 
     private void handlePeek(Game game){
@@ -278,6 +278,7 @@ public class MyExecutor {
                         pacManController.getMove(getPacmanCopy(game), System.currentTimeMillis() + timeLimit),
                         ghostControllerCopy.getMove(game.copy(), System.currentTimeMillis() + timeLimit));
             }
+            System.out.println(game.getScore());
             stats.add(game.getScore());
             ticks.add(game.getTotalTime());
         }

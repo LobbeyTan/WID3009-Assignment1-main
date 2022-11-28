@@ -46,6 +46,6 @@ public class Main {
 
         // executor.runGame(player, ghosts, 10); // delay=10; smaller
         // delay for faster gameplay
-        executor.runGame(new AStarPacMan(), ghosts, 10);
+        executor.runExperimentTicks(new AStarPacMan(), ghosts, 1000, null);
     }
 }

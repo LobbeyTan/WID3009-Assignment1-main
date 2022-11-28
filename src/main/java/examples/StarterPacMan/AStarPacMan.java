@@ -42,7 +42,7 @@ public class AStarPacMan extends PacmanController {
 
 		// No good paths
 		if (!targetFound) {
-			bestPathMove = pacmanLastMoveMade.opposite();
+			bestPathMove = pacmanLastMoveMade;
 		}
 
 		return bestPathMove;
@@ -54,33 +54,35 @@ public class AStarPacMan extends PacmanController {
 		int currentNode = pacmanCurrentNodeIndex;
 
 		List<Segment> targetSegments = new ArrayList<Segment>();
+		List<Integer> visitedNode = new ArrayList<Integer>();
 
-		while (!targetFound) {
+		boolean hasValidMove = true;
 
-			Segment segment = getOrderedSegments(currentNode).get(0);
+		while (!targetFound && hasValidMove) {
+			hasValidMove = false;
 
-			currentNode = segment.start;
+			for (Segment segment : getOrderedSegments(currentNode)) {
+				currentNode = segment.start;
 
-			if (isSafe(currentNode, segment)) {
-				if (!targetSegments.isEmpty()) {
-					Segment lastSegment = targetSegments.get(targetSegments.size() - 1);
+				if (isSafe(currentNode, segment) && !visitedNode.contains(currentNode)) {
+					if (!targetSegments.isEmpty()) {
+						Segment lastSegment = targetSegments.get(targetSegments.size() - 1);
 
-					lastSegment.end = segment.start;
-					segment.parent = lastSegment;
+						lastSegment.end = segment.start;
+						segment.parent = lastSegment;
+					}
+
+					if (currentNode == target) {
+						targetFound = true;
+						segment.end = segment.start;
+					}
+
+					targetSegments.add(segment);
+					visitedNode.add(currentNode);
+					hasValidMove = true;
+					break;
 				}
-
-				if (currentNode == target) {
-					targetFound = true;
-					segment.end = segment.start;
-				}
-
-				targetSegments.add(segment);
-			} else {
-				target = getTarget(true);
-				targetSegments = new ArrayList<Segment>();
-				currentNode = pacmanCurrentNodeIndex;
 			}
-
 		}
 
 		return new Path(targetSegments);
@@ -177,7 +179,7 @@ public class AStarPacMan extends PacmanController {
 		int minPillDistance = Integer.MAX_VALUE;
 		if (target == null) {
 			for (int pillIndex : game.getActivePillsIndices()) {
-				int pillDistance = game.getShortestPathDistance(pillIndex, pacmanCurrentNodeIndex);
+				int pillDistance = game.getManhattanDistance(pillIndex, pacmanCurrentNodeIndex);
 
 				if (pillDistance != -1 && pillDistance < minPillDistance) {
 					target = pillDistance;
@@ -187,7 +189,7 @@ public class AStarPacMan extends PacmanController {
 			}
 		}
 
-		System.out.println("Current target is " + targerType + " at position: " + target);
+		// System.out.println("Current target is " + targerType + " at position: " + target);
 
 		return target;
 	}
