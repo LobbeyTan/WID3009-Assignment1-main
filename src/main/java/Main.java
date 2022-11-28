@@ -4,18 +4,13 @@ import examples.StarterGhostComm.Inky;
 import examples.StarterGhostComm.Pinky;
 import examples.StarterGhostComm.Sue;
 import examples.StarterPacMan.*;
-import pacman.Executor;
 import pacman.controllers.IndividualGhostController;
 import pacman.controllers.MASController;
-import pacman.controllers.PacmanController;
 import pacman.controllers.examples.po.POCommGhosts;
-import pacman.game.Game;
 import pacman.game.Constants.*;
 import pacman.game.internal.POType;
 
-import java.util.ArrayList;
 import java.util.EnumMap;
-import java.util.Random;
 
 /**
  * Created by pwillic on 06/05/2016.
@@ -44,10 +39,13 @@ public class Main {
         MASController ghosts = new POCommGhosts(50);
         QLearningPacMan player = new QLearningPacMan();
 
-        executor.runQLearningTraining(player, ghosts, 1000);
+        executor.runQLearningTraining(player, ghosts, 10000, false);
+
+        player.exportQTable();
+        player.reset(0);
 
         executor.runGame(player, ghosts, 10); // delay=10; smaller
-        // delay for faster gameplay
-        // executor.runGame(new CustomTreeSearchPacMan(), ghosts, 10);
+        // // delay for faster gameplay
+        // executor.runGame(new TreeSearchPacMan(), ghosts, 10);
     }
 }

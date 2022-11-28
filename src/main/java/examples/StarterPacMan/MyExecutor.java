@@ -287,7 +287,7 @@ public class MyExecutor {
         return new Stats[]{stats, ticks};
     }
 
-    public double[] runQLearningTraining(QLearningPacMan pacManController, MASController ghostController, int maxEpisode) {
+    public double[] runQLearningTraining(QLearningPacMan pacManController, MASController ghostController, int maxEpisode, boolean visualize) {
         double maxExplorationRate = 1.0;
         double minExplorationRate = 0.01;
         double explorationDecayRate = 0.001;
@@ -302,16 +302,30 @@ public class MyExecutor {
 
             game = setupGame();
 
+            GameView gv = visualize ? setupGameView(pacManController, game) : null;
+
             while (!game.gameOver()) {
                 handlePeek(game);
                 game.advanceGame(
                         pacManController.getMove(getPacmanCopy(game), System.currentTimeMillis() + timeLimit),
                         ghostControllerCopy.getMove(game.copy(), System.currentTimeMillis() + timeLimit));
+
+                if (visualize) {
+                    try {
+                        Thread.sleep(5);
+                    } catch (Exception e) {
+                    }
+    
+                    gv.repaint();
+                }
             }
+
+            if (visualize) gv.closeGame();
 
             double updatedExplorationRate = minExplorationRate + (maxExplorationRate - minExplorationRate) * Math.exp(-explorationDecayRate * episode);
 
-            System.out.println(String.format("Episode %05d: %.6f | %d", episode, pacManController.totalReward, game.getScore()));
+            System.out.println(String.format("Episode %05d", episode));
+            System.out.println(String.format("Score: %04d | epsilon: %.4f | heuristic: %.3f", game.getScore(), pacManController.explorationRate, pacManController.totalReward));
 
             rewards[i] = pacManController.totalReward;
 

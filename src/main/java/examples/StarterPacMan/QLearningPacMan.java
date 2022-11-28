@@ -1,18 +1,21 @@
 package examples.StarterPacMan;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Random;
 
 import pacman.controllers.PacmanController;
 import pacman.game.Constants.GHOST;
 import pacman.game.Constants.MOVE;
+import pacman.game.Constants;
 import pacman.game.Game;
 
 public class QLearningPacMan extends PacmanController {
+    private static final int SEED = 0;
     private static final Random RANDOM = new Random();
-    private static final int STATE_SIZE = 4;
+    private static final int STATE_SIZE = MOVE.values().length;
     private ArrayList<ArrayList<Double>> qTable = new ArrayList<ArrayList<Double>>();
     private Game game;
 
@@ -21,9 +24,13 @@ public class QLearningPacMan extends PacmanController {
 
     // Q-Learning parameters
     private double learningRate = 0.1;
-    private double discountRate = 0.99;
+    private double discountRate = 0.9;
     public double explorationRate = 1.0;
     public double totalReward = 0;
+
+    public QLearningPacMan() {
+        RANDOM.setSeed(SEED);
+    }
 
     @Override
     public MOVE getMove(Game game, long timeDue) {
@@ -36,17 +43,23 @@ public class QLearningPacMan extends PacmanController {
         // Start learning (using epsilon greedy training algorithm)
         double epsilon = RANDOM.nextDouble();
 
-        MOVE action = getBestAction(epsilon);
+        MOVE action = getAction(pacmanCurrentNodeIndex, epsilon);
 
-        double reward = calculateReward(action);
+        updateLearning(action);
+
+        return action;
+    }
+
+    public void updateLearning(MOVE action) {
+        double reward = calculateReward(pacmanCurrentNodeIndex, action);
+
+        int newState = game.getNeighbour(pacmanCurrentNodeIndex, action);
 
         // Update Q-Table
         qTable.get(pacmanCurrentNodeIndex).set(mapMoveToIndex(action),
-                getUpdatedValue(pacmanCurrentNodeIndex, action, reward));
+                getUpdatedValue(pacmanCurrentNodeIndex, action, newState, reward));
 
         this.totalReward += reward;
-
-        return action;
     }
 
     public void reset(double explorationRate) {
@@ -54,63 +67,105 @@ public class QLearningPacMan extends PacmanController {
         totalReward = 0;
     }
 
-    private MOVE getBestAction(double epsilon) {
-        MOVE action = (epsilon > explorationRate) ? bestMoveFromState(qTable.get(pacmanCurrentNodeIndex))
-                : getRandomMove();
+    public void exportQTable() {
+        try {
+            FileWriter myWriter = new FileWriter("Q-Table.txt");
 
-        if (game.getNeighbour(pacmanCurrentNodeIndex, action) == -1) {
-            action = getRandomMove();
+            for (ArrayList<Double> row : qTable) {
+                for (Double value : row) {
+                    myWriter.write(value + " ");
+                }
+                myWriter.write("\n");
+            }
+            myWriter.close();
+            System.out.println("Successfully export Q-Table.");
+        } catch (IOException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+        }
+    }
+
+    private double getQValue(int state, MOVE action) {
+        return qTable.get(state).get(mapMoveToIndex(action));
+    }
+
+    private double computeValueFromQValues(int state) {
+        ArrayList<Double> qValues = new ArrayList<Double>();
+
+        for (MOVE action : game.getPossibleMoves(state)) {
+            qValues.add(getQValue(state, action));
         }
 
-        return action;
+        return (qValues.isEmpty()) ? 0.0 : Collections.max(qValues);
     }
 
-    private double getUpdatedValue(int state, MOVE action, double reward) {
-        double currentReward = qTable.get(state).get(mapMoveToIndex(action));
-        ArrayList<Double> nextStateRewards = qTable.get(game.getNeighbour(state, action));
+    private MOVE computeActionFromValues(int state) {
+        int bestAction = -1;
+        double maxQValue = 0;
 
-        return (1 - learningRate) * currentReward
-                + learningRate * (reward + (discountRate * Collections.max(nextStateRewards)));
+        for (MOVE action : game.getPossibleMoves(state)) {
+            double qValue = getQValue(state, action);
+
+            if (qValue > maxQValue || bestAction == -1) {
+                maxQValue = qValue;
+                bestAction = mapMoveToIndex(action);
+            }
+        }
+
+        return mapIndexToMove(bestAction);
     }
 
-    private double calculateReward(MOVE action) {
+    private MOVE getAction(int state, double epsilon) {
+        return (epsilon < explorationRate) ? getRandomMove() : computeActionFromValues(state);
+    }
+
+    private double getUpdatedValue(int state, MOVE action, int newState, double reward) {
+        double currentValue = getQValue(state, action);
+
+        double updatedValue = reward + (discountRate * computeValueFromQValues(newState));
+
+        return (1 - learningRate) * currentValue + learningRate * updatedValue;
+    }
+
+    private double calculateReward(int state, MOVE action) {
         /*
          * Reward Calculation
-         * - If eat pill: +5
+         * - If eat pill: +1
          * - If eat powerPill: +5
          * - If eat ghost (edible): + 10
          * - If eat ghost (not edible): -10
-         * - Distance between ghost: 1 / D
          */
 
         double reward = 0;
 
-        int currentNode = game.getNeighbour(pacmanCurrentNodeIndex, action);
+        int currentNode = game.getNeighbour(state, action);
 
         int pillIndex = game.getPillIndex(currentNode);
         int powerPillIndex = game.getPowerPillIndex(currentNode);
 
-        if ((pillIndex != -1 && game.isPillStillAvailable(pillIndex))
-                || (powerPillIndex != -1 && game.isPowerPillStillAvailable(powerPillIndex))) {
-            reward += 5;
+        if (pillIndex != -1 && game.isPillStillAvailable(pillIndex)) {
+            reward += 10;
         }
 
-        // Get all ghosts node index in a list
-        List<Integer> ghostNodeIndices = new ArrayList<>();
-        GHOST[] ghosts = GHOST.values();
-        for (GHOST ghost : ghosts) {
-            ghostNodeIndices.add(game.getGhostCurrentNodeIndex(ghost));
+        if (powerPillIndex != -1 && game.isPowerPillStillAvailable(powerPillIndex)) {
+            reward += 50;
         }
 
-        for (GHOST ghost : ghosts) {
-            if (game.getGhostCurrentNodeIndex(ghost) == currentNode) {
-                reward += game.isGhostEdible(ghost) ? 10 : -10;
-            } else {
-                reward -= 1 / (game.getEuclideanDistance(pacmanCurrentNodeIndex, currentNode) * 4);
+        for (GHOST ghost : GHOST.values()) {
+            int distance = game.getShortestPathDistance(currentNode,
+                    game.getGhostCurrentNodeIndex(ghost));
+
+            if (distance <= Constants.EAT_DISTANCE && distance != -1) {
+                if (game.isGhostEdible(ghost)) {
+                    reward += 200;
+                } else {
+                    // reward -= 3;
+                    // break;
+                }
             }
         }
 
-        return reward;
+        return reward - 0.01;
     }
 
     private void initializeQTable() {
@@ -135,8 +190,10 @@ public class QLearningPacMan extends PacmanController {
                 return 2;
             case UP:
                 return 3;
+            case NEUTRAL:
+                return 4;
             default:
-                return RANDOM.nextInt(STATE_SIZE);
+                return 4;
         }
     }
 
@@ -150,23 +207,11 @@ public class QLearningPacMan extends PacmanController {
                 return MOVE.RIGHT;
             case 3:
                 return MOVE.UP;
+            case 4:
+                return MOVE.NEUTRAL;
             default:
                 return MOVE.NEUTRAL;
         }
-    }
-
-    private MOVE bestMoveFromState(ArrayList<Double> scores) {
-        int bestMove = 0;
-        double maxScore = 0;
-
-        for (int i = 0; i < scores.size(); i++) {
-            if (scores.get(i) > maxScore) {
-                maxScore = scores.get(i);
-                bestMove = i;
-            }
-        }
-
-        return mapIndexToMove(bestMove);
     }
 
     private MOVE getRandomMove() {
