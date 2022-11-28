@@ -130,10 +130,10 @@ public class QLearningPacMan extends PacmanController {
     private double calculateReward(int state, MOVE action) {
         /*
          * Reward Calculation
-         * - If eat pill: +1
-         * - If eat powerPill: +5
-         * - If eat ghost (edible): + 10
-         * - If eat ghost (not edible): -10
+         * - If eat pill: +10
+         * - If eat powerPill: +50
+         * - If eat ghost (edible): + 200
+         * - Each time reduce reward -= 1
          */
 
         double reward = 0;
@@ -159,8 +159,8 @@ public class QLearningPacMan extends PacmanController {
                 if (game.isGhostEdible(ghost)) {
                     reward += 200;
                 } else {
-                    // reward -= 3;
-                    // break;
+                    reward -= game.getPacmanNumberOfLivesRemaining() == 1 ? 500 : 100;
+                    break;
                 }
             }
         }

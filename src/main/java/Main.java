@@ -39,13 +39,13 @@ public class Main {
         MASController ghosts = new POCommGhosts(50);
         QLearningPacMan player = new QLearningPacMan();
 
-        executor.runQLearningTraining(player, ghosts, 10000, false);
+        // executor.runQLearningTraining(player, ghosts, 5000000, false);
 
-        player.exportQTable();
-        player.reset(0);
+        // player.exportQTable();
+        // player.reset(0);
 
-        executor.runGame(player, ghosts, 10); // delay=10; smaller
-        // // delay for faster gameplay
-        // executor.runGame(new TreeSearchPacMan(), ghosts, 10);
+        // executor.runGame(player, ghosts, 10); // delay=10; smaller
+        // delay for faster gameplay
+        executor.runGame(new AStarPacMan(), ghosts, 10);
     }
 }

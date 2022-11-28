@@ -290,7 +290,7 @@ public class MyExecutor {
     public double[] runQLearningTraining(QLearningPacMan pacManController, MASController ghostController, int maxEpisode, boolean visualize) {
         double maxExplorationRate = 1.0;
         double minExplorationRate = 0.01;
-        double explorationDecayRate = 0.001;
+        double explorationDecayRate = 0.00001;
         double[] rewards = new double[maxEpisode];
 
         MASController ghostControllerCopy = ghostController.copy(ghostPO);
